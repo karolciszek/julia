@@ -2,30 +2,29 @@ import numpy as np
 import re as regex
 import scipy.misc
 
+WIDTH = 3840
+HEIGHT = 3291
+PRINT_FREQUENCY = 100000
+
 f = open('3840.out', 'r')
 
-iterationsPerPoint = 200
-def interpolateColor(iteration):
-    linInp = np.floor(255 * (iteration / iterationsPerPoint))
-    return [linInp, linInp, linInp]
+output_np_array = np.empty((WIDTH, HEIGHT))
 
-bitmap = np.empty((3840, 3291, 3))
-
+pattern = regex.compile('[0-9\.\-]+')
 n = 0
 for line in f:
     # Encoding-specific parsing. Bit dirty.
     # Encoding in file:
     # (x-pixel,y-pixel),iterations,[real-component,imag-component]
-    pattern = regex.compile('[0-9\.\-]+')
     tokens = regex.findall(pattern, line)
 
     iterations = int(tokens[2])
     xPos = int(tokens[0])
     yPos = int(tokens[1])
+    output_np_array[xPos][yPos] = iterations
 
-    clr = interpolateColor(iterations)
-    bitmap[xPos][yPos] = clr
     n += 1
-    print(n)
+    if (n % 100000 == 0): print n
 
-scipy.misc.imsave("out.png", bitmap)
+np.save('3840.npy', output_np_array)
+# scipy.misc.imsave("out.png", bitmap)
