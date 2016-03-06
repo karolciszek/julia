@@ -7,27 +7,40 @@ ESCAPED_FILE = 'escaped.npy'
 OUTPUT_FILE = 'out.png'
 ITERS_PER_POINT = 200
 
-def linear_interpolation(iteration):
-    linInp = np.floor(255 * (iteration / ITERS_PER_POINT))
-    return [linInp, linInp, linInp]
-linear_interpolation = np.vectorize(linear_interpolation)
+# Interpolation functions: generate colour index
+def linear(iteration):
+    return iteration / ITERS_PER_POINT
+linear = np.vectorize(linear)
 
-def smooth_interpolation(iteration, escaped):
+def smooth(iteration, escaped):
     log2 = np.log(2)
     mu = iteration + 1 - np.log(np.log(np.abs(escaped))) / log2
-    col_base = np.floor(255 * mu / ITERS_PER_POINT) if (not np.isnan(mu)) else 0
-    return col_base
-smooth_interpolation = np.vectorize(smooth_interpolation)
+    index = np.floor(255 * mu / ITERS_PER_POINT) if not np.isnan(mu) else 0
+    return index
+smooth = np.vectorize(smooth)
 
-iterations = np.load(ITERATION_FILE)
-escaped_values = np.load(ESCAPED_FILE)
+# Palette functions: generate RGB colour from index
+def grayscale(index):
+    colour = np.floor(255 * index)
+    return (colour, colour, colour)
+grayscale = np.vectorize(grayscale)
 
-(width, height) = iterations.shape
-# scipy saves bitmaps in form (height, width, colour_channels)
-bitmap_dimensions = (height, width, 3)
-bitmap = np.empty(bitmap_dimensions)
+if __name__ == '__main__':
+    iterations = np.load(ITERATION_FILE)
+    escaped_values = np.load(ESCAPED_FILE)
 
-bitmap = smooth_interpolation(iterations, escaped_values)
-print(bitmap)
+    width, height = iterations.shape
+    # Scipy saves bitmaps in form (height, width, colour_channels)
+    bitmap_dimensions = (height, width)
 
-scipy.misc.imsave(OUTPUT_FILE, bitmap)
+    def gen_channel(): return np.empty(bitmap_dimensions)
+    red = gen_channel()
+    green = gen_channel()
+    blue = gen_channel()
+
+    red, green, blue = grayscale(linear(iterations))
+
+    # Changes the array to form bitmap[column][row][channel]
+    # Transposing could be inefficient?
+    bitmap = np.transpose([red, green, blue], (1, 2, 0))
+    scipy.misc.imsave(OUTPUT_FILE, bitmap)
