@@ -1,4 +1,4 @@
-#!/bin/python3
+#!/usr/bin/python
 import numpy as np
 
 iterations_per_point = 200
@@ -11,7 +11,7 @@ x_min, x_max = (-2.1, 0.7)
 y_min, y_max = (-1.2j, 1.2j)
 
 # Width of resulting image in pixels
-width = 800
+width = 1500
 
 # Preserving proportions in pixelheight
 y_range = np.abs(y_max - y_min)

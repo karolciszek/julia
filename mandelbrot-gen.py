@@ -1,4 +1,4 @@
-#!/bin/python3
+#!/usr/bin/python
 import numpy as np
 import scipy.misc
 
@@ -9,13 +9,13 @@ ITERS_PER_POINT = 200
 
 # Interpolation functions: generate colour index
 def linear(iteration):
-    return iteration / ITERS_PER_POINT
+    return float(iteration) / ITERS_PER_POINT
 linear = np.vectorize(linear)
 
 def smooth(iteration, escaped):
     log2 = np.log(2)
     mu = iteration + 1 - np.log(np.log(np.abs(escaped))) / log2
-    index = np.floor(255 * mu / ITERS_PER_POINT) if not np.isnan(mu) else 0
+    index = mu / ITERS_PER_POINT if not np.isnan(mu) else 0
     return index
 smooth = np.vectorize(smooth)
 
@@ -24,6 +24,13 @@ def grayscale(index):
     colour = np.floor(255 * index)
     return (colour, colour, colour)
 grayscale = np.vectorize(grayscale)
+
+log2 = np.log(2)
+def blueish(index):
+    red_green = np.floor(102*np.log(index+1) / log2)
+    blue = np.floor(161*np.log(index+1) / log2)
+    return (red_green, red_green, blue)
+blueish = np.vectorize(blueish)
 
 if __name__ == '__main__':
     iterations = np.load(ITERATION_FILE)
@@ -38,7 +45,7 @@ if __name__ == '__main__':
     green = gen_channel()
     blue = gen_channel()
 
-    red, green, blue = grayscale(linear(iterations))
+    red, green, blue = blueish(smooth(iterations, escaped_values))
 
     # Changes the array to form bitmap[column][row][channel]
     # Transposing could be inefficient?
