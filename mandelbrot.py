@@ -1,5 +1,6 @@
 #!/usr/bin/python
 import numpy as np
+from numpy import int, abs
 
 iterations_per_point = 200
 EPSILON = 0.01
@@ -23,7 +24,7 @@ def iterations_to_escape(c):
     z = 0
     for i in range(iterations_per_point):
         z = z ** 2 + c
-        if np.abs(z) >= 2: break
+        if abs(z) >= 2: break
     return (i, z)
 
 # Allows the function to be performed elementwise

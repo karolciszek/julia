@@ -1,35 +1,50 @@
 #!/usr/bin/python
 import numpy as np
 import scipy.misc
+from PIL import Image
 
 ITERATION_FILE = 'iter.npy'
 ESCAPED_FILE = 'escaped.npy'
 OUTPUT_FILE = 'out.png'
 ITERS_PER_POINT = 200
+log2 = np.log(2)
+
 
 # Interpolation functions: generate colour index
-def linear(iteration):
+def iteration_index(iteration):
     return float(iteration) / ITERS_PER_POINT
-linear = np.vectorize(linear)
+iteration_index = np.vectorize(iteration_index)
 
-def smooth(iteration, escaped):
-    log2 = np.log(2)
+
+def smooth_index(iteration, escaped):
     mu = iteration + 1 - np.log(np.log(np.abs(escaped))) / log2
-    index = mu / ITERS_PER_POINT if not np.isnan(mu) else 0
+    index = mu / ITERS_PER_POINT if not (np.isnan(mu) or mu == ITERS_PER_POINT) else 0
     return index
-smooth = np.vectorize(smooth)
+smooth_index = np.vectorize(smooth_index)
+
 
 # Palette functions: generate RGB colour from index
-def grayscale(index):
+def greyscale(index):
     colour = np.floor(255 * index)
-    return (colour, colour, colour)
-grayscale = np.vectorize(grayscale)
+    return colour, colour, colour
+greyscale = np.vectorize(greyscale)
 
-log2 = np.log(2)
+
+def linear(index, end=(255, 255, 255), start=(0, 0, 0)):
+    return tuple(np.floor(s + (e - s) * index) for s, e in zip(start, end))
+linear = np.vectorize(linear)
+
+
+def repeating(index, end=(255, 255, 255), start=(0, 0, 0), freq=3, phase=0):
+    return tuple(np.floor(e + (e - s) * np.sin(index * freq + phase) / 2)
+                 for s, e in zip(start, end))
+repeating = np.vectorize(repeating)
+
+
 def blueish(index):
-    red_green = np.floor(102*np.log(index+1) / log2)
-    blue = np.floor(161*np.log(index+1) / log2)
-    return (red_green, red_green, blue)
+    r_g = np.floor(102*np.log(index+1) / log2)
+    b = np.floor(161*np.log(index+1) / log2)
+    return r_g, r_g, b
 blueish = np.vectorize(blueish)
 
 if __name__ == '__main__':
@@ -41,13 +56,15 @@ if __name__ == '__main__':
     bitmap_dimensions = (height, width)
 
     def gen_channel(): return np.empty(bitmap_dimensions)
-    red = gen_channel()
-    green = gen_channel()
-    blue = gen_channel()
+    # red = gen_channel()
+    # green = gen_channel()
+    # blue = gen_channel()
 
-    red, green, blue = blueish(smooth(iterations, escaped_values))
+    r, g, b = repeating(smooth_index(iterations, escaped_values),
+                        freq=8 * np.pi)
+    print "Transposing"
 
-    # Changes the array to form bitmap[column][row][channel]
+    # Changes the array to form bitmap[column][row][c   hannel]
     # Transposing could be inefficient?
-    bitmap = np.transpose([red, green, blue], (1, 2, 0))
+    bitmap = np.transpose([r, g, b], (1, 2, 0))
     scipy.misc.imsave(OUTPUT_FILE, bitmap)
