@@ -10,19 +10,18 @@ ITER_NUM = 250
 EPS = 0.01
 BAILOUT = 2
 
-xmin, xmax = (-0.1, 0.2)
-ymin, ymax = (0.85j, 0.40j)
-c = -0.8 + 0.156j
+xmin, xmax = (-1.5, 1.5)
+ymin, ymax = (-1.0j, 1.0j)
+c = -0.4 + 0.65j
 abs_c = abs(c)
 # c = -0.5 + 0.25j
 # c = -0.123 + 0.745j
 # Exponent in the Julia set
 p = 2
 # Number of 'trailing' elements when calculating Triangle Inequality Average
-m = 3
+m = 10
 
-path = 'out.png'
-width = 2500
+width = 150
 yrange = np.abs(ymax - ymin)
 xrange = xmax - xmin
 height = np.int(yrange * width / xrange)
@@ -66,10 +65,10 @@ def lin_inp(zs, d, i):
             (1 - d)*avg_sum(zs[:-1], i, last_iters_num))
 
 
-def main():
-    if len(sys.argv) == 3:
+if __name__ == '__main__':
+    if len(sys.argv) == 2:
         m = int(sys.argv[1])
-        path = sys.argv[2]
+    path = 'm' + str(m) + '.png'
 
     xaxis = np.linspace(xmin, xmax, width)
     yaxis = np.linspace(ymin, ymax, height)
@@ -86,12 +85,11 @@ def main():
             if isnan(index) or isinf(index):
                 index = 0
 
-            bitmap[col][row] = smooth / ITER_NUM
+            bitmap[col][row] = index
         if row % 10 == 0:
-            print row
+            pass
+            #print row
     scipy.misc.imsave(path, bitmap)
 
-#    main()
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
     # cProfile.run('main()')
