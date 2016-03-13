@@ -3,6 +3,8 @@ import numpy as np
 from numpy import log, isnan, isinf
 import scipy.misc
 import sys
+# for performance analysis
+# import cProfile
 
 ITER_NUM = 250
 EPS = 0.01
@@ -11,14 +13,16 @@ BAILOUT = 2
 xmin, xmax = (-0.1, 0.2)
 ymin, ymax = (0.85j, 0.40j)
 c = -0.8 + 0.156j
+abs_c = abs(c)
 # c = -0.5 + 0.25j
 # c = -0.123 + 0.745j
 # Exponent in the Julia set
 p = 2
 # Number of 'trailing' elements when calculating Triangle Inequality Average
-m = 7
+m = 3
 
-width = 150
+path = 'out.png'
+width = 2500
 yrange = np.abs(ymax - ymin)
 xrange = xmax - xmin
 height = np.int(yrange * width / xrange)
@@ -41,19 +45,19 @@ def smooth_iter(z, iters):
 
 # Functions for Triangle Inequality Average method for colouring fractals
 # Pre: zs has at least two elements
-def t(zpair):
-    z_nminus1 = zpair[0] ** p
-    z_n = zpair[1]
-    mn = abs(abs(z_nminus1) - abs(c))
-    Mn =  abs(z_nminus1) + abs(c)
-    return (abs(z_n) - mn) / (Mn - mn)
+def t(zn_minus1, zn):
+    abs_zn_minus1 = abs(zn_minus1 ** p)
+
+    mn = abs(abs_zn_minus1 - abs_c)
+    Mn = abs_zn_minus1 + abs_c
+    return (abs(zn) - mn) / (Mn - mn)
 
 
 # to be implemented later
 def avg_sum(zs, i, m):
     if i - m == 0:
         return np.inf
-    return sum(t(zs[n-2:n]) for n in range(m, i)) / (i - m)
+    return sum(t(zs[n - 2], zs[n - 1]) for n in range(m, i)) / (i - m)
 
 
 def lin_inp(zs, d, i):
@@ -62,9 +66,10 @@ def lin_inp(zs, d, i):
             (1 - d)*avg_sum(zs[:-1], i, last_iters_num))
 
 
-if __name__ == '__main__':
-    if len(sys.argv) == 2:
+def main():
+    if len(sys.argv) == 3:
         m = int(sys.argv[1])
+        path = sys.argv[2]
 
     xaxis = np.linspace(xmin, xmax, width)
     yaxis = np.linspace(ymin, ymax, height)
@@ -81,8 +86,12 @@ if __name__ == '__main__':
             if isnan(index) or isinf(index):
                 index = 0
 
-            bitmap[col][row] = index
+            bitmap[col][row] = smooth / ITER_NUM
         if row % 10 == 0:
             print row
+    scipy.misc.imsave(path, bitmap)
 
-    scipy.misc.imsave('out.png', bitmap)
+#    main()
+if __name__ == '__main__':
+    main()
+    # cProfile.run('main()')
