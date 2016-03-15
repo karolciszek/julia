@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 import numpy as np
 from numpy import log, isnan, isinf
 import scipy.misc
@@ -10,9 +10,9 @@ ITER_NUM = 250
 EPS = 0.01
 BAILOUT = 2
 
-xmin, xmax = (-2.1, 0.7)
-ymin, ymax = (-1.2j, 1.2j)
-c = -0.4 + 0.65j
+xmin, xmax = (-0.7, 0.3)
+ymin, ymax = (-0.3j, 1.3j)
+c = 0.345 - 0.45j
 abs_c = abs(c)
 # c = -0.5 + 0.25j
 # c = -0.123 + 0.745j
@@ -21,7 +21,7 @@ p = 2
 # Number of 'trailing' elements when calculating Triangle Inequality Average
 m = 10
 
-width = 150
+width = 70
 yrange = np.abs(ymax - ymin)
 xrange = xmax - xmin
 height = np.int(yrange * width / xrange)
@@ -31,17 +31,6 @@ def julia(z):
     zs = np.empty(ITER_NUM, dtype='complex64')
     for i in range(ITER_NUM):
         z = z ** 2 + c
-        zs[i] = z
-        if abs(z) >= BAILOUT:
-            return i, zs
-    return ITER_NUM, zs
-
-
-def mandelbrot(const):
-    zs = np.empty(ITER_NUM, dtype='complex64')
-    z = 0
-    for i in range(ITER_NUM):
-        z = z ** 2 + const
         zs[i] = z
         if abs(z) >= BAILOUT:
             return i, zs
@@ -81,7 +70,7 @@ def lin_inp(zs, d, i, num_elems, const=c):
 if __name__ == '__main__':
     if len(sys.argv) == 2:
         m = int(sys.argv[1])
-    path = 'img_edit/multibrot_-1/m' + str(m) + '.png'
+    path = 'img_edit/julia-header/m' + str(m) + '.png'
 
     xaxis = np.linspace(xmin, xmax, width)
     yaxis = np.linspace(ymin, ymax, height)
@@ -91,12 +80,11 @@ if __name__ == '__main__':
     for row in range(width):
         for col in range(height):
             cplx_param = xaxis[row] + yaxis[col]
-            # numiters, iterated_zs = julia(cplx_param)
-            numiters, iterated_zs = mandelbrot(cplx_param)
+            numiters, iterated_zs = julia(cplx_param)
             smooth_count = smooth_iter(iterated_zs[numiters - 1], numiters)
 
             index = lin_inp(iterated_zs, smooth_count % 1.0,
-                            numiters, m, cplx_param)
+                            numiters, m, c)
             if isnan(index) or isinf(index):
                 index = 0
 
