@@ -1,10 +1,10 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 import numpy as np
 from numpy import abs
 
 iterations_per_point = 200
 EPSILON = 0.01
-power = -1
+power = 2
 
 DATA_FILE = 'itertest.npy'
 # ESCAPED_FILE = 'escaped_mi.npy'
@@ -43,7 +43,6 @@ if __name__ == '__main__':
     xs, ys = np.meshgrid(x_axis, y_axis)
 
     data_type = 'complex64, int, {}complex64'.format(iterations_per_point)
-    print(data_type)
     output_data = np.empty((height, width), dtype=data_type)
 
     for col in range(height):

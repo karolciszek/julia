@@ -1,12 +1,12 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 import numpy as np
 from numpy import isnan, isinf
 import scipy.misc
 import sys
+import os
 from julia import t, avg_sum, lin_inp
 
 ITERATION_FILE = 'itertest.npy'
-ESCAPED_FILE = 'escaped_minus1.npy'
 OUTPUT_FILE = 'img_edit/mandelbrot_-1/out.png'
 ITERS_PER_POINT = 200
 log2 = np.log(2)
@@ -19,14 +19,8 @@ iteration_index = np.vectorize(iteration_index)
 
 
 def smooth_index(iteration, escaped):
-    mu = iteration + 1 - np.log(np.log(np.abs(escaped))) / log2
-    if not np.isnan(mu) and not mu == ITERS_PER_POINT:
-        return mu / ITERS_PER_POINT
-    else:
-        return 0
-smooth_index = np.vectorize(smooth_index)
+    return iteration + 1 - np.log(np.log(np.abs(escaped))) / log2
 
-# Palette functions: generate RGB colour from index
 def greyscale(index):
     colour = np.floor(255 * index)
     return colour, colour, colour
@@ -39,28 +33,33 @@ if __name__ == '__main__':
     path = 'img_edit/mandelbrot_-1/m' + str(num_avg_elems) + '.png'
 
     file_data = np.load(ITERATION_FILE)
-    print np.shape(file_data)
-    print file_data.dtype
-    (argand_points, iterations, zs_arrays) = file_data
+    file_data.dtype.names = ('cplx_consts', 'iters', 'iter_val_arrays')
+    argand_points = file_data['cplx_consts']
+    iterations = file_data['iters']
+    zs_arrays = file_data['iter_val_arrays']
 
-    width, height = iterations.shape
+    height, width = file_data.shape
     # Scipy saves bitmaps in form (height, width, colour_channels)
-    bitmap = np.empty(height, width)
+    bitmap = np.empty((height, width))
 
+    for row in range(height):
+        for col in range(width):
+            point = argand_points[row][col]
+            numiters = iterations[row][col]
+            iterated_zs = zs_arrays[row][col]
 
-    for row in range(width):
-        for col in range(height):
-            point = argand_points[width][height]
-            numiters = iterations[width][height]
-            iterated_zs = zs_arrays[width][height]
+            smooth_count = smooth_index(numiters, iterated_zs[numiters - 1])
 
-            smooth_count = smooth_index(iterated_zs[numiters - 1], numiters)
-
+            print smooth_count
             index = lin_inp(iterated_zs, smooth_count % 1.0,
                             numiters, num_avg_elems, point)
 
             if isnan(index) or isinf(index):
                 index = 0
 
-            bitmap[col][row] = index
+            bitmap[row][col] = index
+
+    dir_path = os.path.dirname(OUTPUT_FILE)
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
     scipy.misc.imsave(OUTPUT_FILE, bitmap)
