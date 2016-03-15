@@ -19,7 +19,7 @@ iteration_index = np.vectorize(iteration_index)
 
 
 def smooth_index(iteration, escaped):
-    return iteration + 1 - np.log(np.log(np.abs(escaped))) / log2
+    return iteration + 1 - np.log(log2 / np.log(np.abs(escaped))) / log2
 
 def greyscale(index):
     colour = np.floor(255 * index)
@@ -51,10 +51,11 @@ if __name__ == '__main__':
             iterated_zs = zs_arrays[row][col]
 
             smooth_count = smooth_index(numiters, iterated_zs[numiters - 1])
+            if col % 10 == 0: print smooth_count
+            index = smooth_count / ITERS_PER_POINT
 
-            print smooth_count
-            index = lin_inp(iterated_zs, smooth_count % 1.0,
-                            numiters, num_avg_elems, point)
+            # index = lin_inp(iterated_zs, smooth_count % 1.0,
+            #                 numiters, num_avg_elems, point)
 
             if isnan(index) or isinf(index):
                 index = 0
