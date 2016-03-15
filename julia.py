@@ -21,7 +21,7 @@ p = 2
 # Number of 'trailing' elements when calculating Triangle Inequality Average
 m = 10
 
-width = 70
+width = 2500
 yrange = np.abs(ymax - ymin)
 xrange = xmax - xmin
 height = np.int(yrange * width / xrange)
