@@ -10,8 +10,8 @@ ITER_NUM = 250
 EPS = 0.01
 BAILOUT = 2
 
-xmin, xmax = (-1.5, 1.5)
-ymin, ymax = (-1.0j, 1.0j)
+xmin, xmax = (-2.1, 0.7)
+ymin, ymax = (-1.2j, 1.2j)
 c = -0.4 + 0.65j
 abs_c = abs(c)
 # c = -0.5 + 0.25j
@@ -32,7 +32,19 @@ def julia(z):
     for i in range(ITER_NUM):
         z = z ** 2 + c
         zs[i] = z
-        if abs(z) >= BAILOUT: return i, zs
+        if abs(z) >= BAILOUT:
+            return i, zs
+    return ITER_NUM, zs
+
+
+def mandelbrot(const):
+    zs = np.empty(ITER_NUM, dtype='complex64')
+    z = 0
+    for i in range(ITER_NUM):
+        z = z ** 2 + const
+        zs[i] = z
+        if abs(z) >= BAILOUT:
+            return i, zs
     return ITER_NUM, zs
 
 
@@ -44,31 +56,32 @@ def smooth_iter(z, iters):
 
 # Functions for Triangle Inequality Average method for colouring fractals
 # Pre: zs has at least two elements
-def t(zn_minus1, zn):
+def t(zn_minus1, zn, const):
     abs_zn_minus1 = abs(zn_minus1 ** p)
 
-    mn = abs(abs_zn_minus1 - abs_c)
-    Mn = abs_zn_minus1 + abs_c
+    mn = abs(abs_zn_minus1 - abs(const))
+    Mn = abs_zn_minus1 + abs(const)
     return (abs(zn) - mn) / (Mn - mn)
 
 
 # to be implemented later
-def avg_sum(zs, i, m):
-    if i - m == 0:
+def avg_sum(zs, i, numelems, const):
+    if i - numelems == 0:
         return np.inf
-    return sum(t(zs[n - 2], zs[n - 1]) for n in range(m, i)) / (i - m)
+    return (sum(t(zs[n - 2], zs[n - 1], const) for n in range(numelems, i)) /
+            (i - numelems))
 
 
-def lin_inp(zs, d, i):
-    last_iters_num = i if i < m else m
-    return (d*avg_sum(zs, i, last_iters_num) +
-            (1 - d)*avg_sum(zs[:-1], i, last_iters_num))
+def lin_inp(zs, d, i, num_elems, const=c):
+    last_iters_num = i if i < num_elems else num_elems
+    return (d * avg_sum(zs, i, last_iters_num, const) +
+            (1 - d) * avg_sum(zs[:-1], i, last_iters_num, const))
 
 
 if __name__ == '__main__':
     if len(sys.argv) == 2:
         m = int(sys.argv[1])
-    path = 'm' + str(m) + '.png'
+    path = 'img_edit/multibrot_-1/m' + str(m) + '.png'
 
     xaxis = np.linspace(xmin, xmax, width)
     yaxis = np.linspace(ymin, ymax, height)
@@ -77,18 +90,19 @@ if __name__ == '__main__':
 
     for row in range(width):
         for col in range(height):
-            z = xaxis[row] + yaxis[col]
-            iters, zs = julia(z)
-            smooth = smooth_iter(zs[iters - 1], iters)
+            cplx_param = xaxis[row] + yaxis[col]
+            # numiters, iterated_zs = julia(cplx_param)
+            numiters, iterated_zs = mandelbrot(cplx_param)
+            smooth_count = smooth_iter(iterated_zs[numiters - 1], numiters)
 
-            index = lin_inp(zs, smooth % 1.0, iters)
+            index = lin_inp(iterated_zs, smooth_count % 1.0,
+                            numiters, m, cplx_param)
             if isnan(index) or isinf(index):
                 index = 0
 
             bitmap[col][row] = index
         if row % 10 == 0:
-            pass
-            #print row
+            print str(m) + ': ' + str(row)
     scipy.misc.imsave(path, bitmap)
 
 # if __name__ == '__main__':

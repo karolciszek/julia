@@ -1,11 +1,13 @@
 #!/usr/bin/python
 import numpy as np
+from numpy import isnan, isinf
 import scipy.misc
-from PIL import Image
+import sys
+from julia import t, avg_sum, lin_inp
 
-ITERATION_FILE = 'iter.npy'
-ESCAPED_FILE = 'escaped.npy'
-OUTPUT_FILE = 'out.png'
+ITERATION_FILE = 'itertest.npy'
+ESCAPED_FILE = 'escaped_minus1.npy'
+OUTPUT_FILE = 'img_edit/mandelbrot_-1/out.png'
 ITERS_PER_POINT = 200
 log2 = np.log(2)
 
@@ -18,53 +20,47 @@ iteration_index = np.vectorize(iteration_index)
 
 def smooth_index(iteration, escaped):
     mu = iteration + 1 - np.log(np.log(np.abs(escaped))) / log2
-    index = mu / ITERS_PER_POINT if not (np.isnan(mu) or mu == ITERS_PER_POINT) else 0
-    return index
+    if not np.isnan(mu) and not mu == ITERS_PER_POINT:
+        return mu / ITERS_PER_POINT
+    else:
+        return 0
 smooth_index = np.vectorize(smooth_index)
-
 
 # Palette functions: generate RGB colour from index
 def greyscale(index):
     colour = np.floor(255 * index)
     return colour, colour, colour
-greyscale = np.vectorize(greyscale)
-
-
-def linear(index, end=(255, 255, 255), start=(0, 0, 0)):
-    return tuple(np.floor(s + (e - s) * index) for s, e in zip(start, end))
-linear = np.vectorize(linear)
-
-
-def repeating(index, end=(255, 255, 255), start=(0, 0, 0), freq=3, phase=0):
-    return tuple(np.floor(e + (e - s) * np.sin(index * freq + phase) / 2)
-                 for s, e in zip(start, end))
-repeating = np.vectorize(repeating)
-
-
-def blueish(index):
-    r_g = np.floor(102*np.log(index+1) / log2)
-    b = np.floor(161*np.log(index+1) / log2)
-    return r_g, r_g, b
-blueish = np.vectorize(blueish)
 
 if __name__ == '__main__':
-    iterations = np.load(ITERATION_FILE)
-    escaped_values = np.load(ESCAPED_FILE)
+    if len(sys.argv) == 2:
+        num_avg_elems = int(sys.argv[1])
+    else:
+        num_avg_elems = 10
+    path = 'img_edit/mandelbrot_-1/m' + str(num_avg_elems) + '.png'
+
+    file_data = np.load(ITERATION_FILE)
+    print np.shape(file_data)
+    print file_data.dtype
+    (argand_points, iterations, zs_arrays) = file_data
 
     width, height = iterations.shape
     # Scipy saves bitmaps in form (height, width, colour_channels)
-    bitmap_dimensions = (height, width)
+    bitmap = np.empty(height, width)
 
-    def gen_channel(): return np.empty(bitmap_dimensions)
-    # red = gen_channel()
-    # green = gen_channel()
-    # blue = gen_channel()
 
-    r, g, b = repeating(smooth_index(iterations, escaped_values),
-                        freq=8 * np.pi)
-    print "Transposing"
+    for row in range(width):
+        for col in range(height):
+            point = argand_points[width][height]
+            numiters = iterations[width][height]
+            iterated_zs = zs_arrays[width][height]
 
-    # Changes the array to form bitmap[column][row][c   hannel]
-    # Transposing could be inefficient?
-    bitmap = np.transpose([r, g, b], (1, 2, 0))
+            smooth_count = smooth_index(iterated_zs[numiters - 1], numiters)
+
+            index = lin_inp(iterated_zs, smooth_count % 1.0,
+                            numiters, num_avg_elems, point)
+
+            if isnan(index) or isinf(index):
+                index = 0
+
+            bitmap[col][row] = index
     scipy.misc.imsave(OUTPUT_FILE, bitmap)
