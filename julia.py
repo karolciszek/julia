@@ -1,7 +1,10 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 import numpy as np
 from numpy import log, isnan, isinf
 import scipy.misc
+
+from PIL import Image
+import imageio
 import sys
 # for performance analysis
 # import cProfile
@@ -21,10 +24,10 @@ p = 2
 # Number of 'trailing' elements when calculating Triangle Inequality Average
 m = 10
 
-width = 2500
+width = 500
 yrange = np.abs(ymax - ymin)
 xrange = xmax - xmin
-height = np.int(yrange * width / xrange)
+height = int(yrange * width / xrange)
 
 
 def julia(z):
@@ -90,8 +93,14 @@ if __name__ == '__main__':
 
             bitmap[col][row] = index
         if row % 10 == 0:
-            print str(m) + ': ' + str(row)
-    scipy.misc.imsave(path, bitmap)
+            print(str(m) + ': ' + str(row))
+
+    print(bitmap)
+    bitmap = bitmap * 256
+    img = Image.fromarray(bitmap)
+    if img.mode != 'RGB':
+        img = img.convert('RGB')
+    imageio.imwrite(path, img)
 
 # if __name__ == '__main__':
     # cProfile.run('main()')
